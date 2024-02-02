@@ -140,4 +140,102 @@ describe('react-router 4 replace-location-query', function () {
 			OUTPUT.replace(/\W/gm, ''),
 		);
 	});
+
+	describe('examples from netlify-react-ui', function () {
+		it('example 1', function () {
+			const INPUT = `
+			function getOptions(props) {
+				return { ...props.location.query };
+			}
+        `;
+
+			const OUTPUT = `
+			import { parse } from 'query-string';
+
+			function getOptions(props) {
+				return { ...parse(props.location.search) };
+			}
+        `;
+
+			const fileInfo: FileInfo = {
+				path: 'index.js',
+				source: INPUT,
+			};
+
+			const actualOutput = transform(fileInfo, buildApi('tsx'));
+
+			actualOutput?.replace(/\W/gm, ''), OUTPUT.replace(/\W/gm, '');
+		});
+
+		it('example 2', function () {
+			const INPUT = `
+			useEffect(() => {
+				if (!isAuthenticated) {
+				location.query.next
+					? setNext(location.query.next)
+					: setNext(window.location.href.replace(window.location.origin, ''));
+				}
+			}, [isAuthenticated, location.query.next]);
+        `;
+
+			const OUTPUT = `
+			import { parse } from 'query-string';
+			
+			useEffect(() => {
+				if (!isAuthenticated) {
+				parse(location.search).next
+					? setNext(parse(location.search).next)
+					: setNext(window.location.href.replace(window.location.origin, ''));
+				}
+			}, [isAuthenticated, location.query.next]);
+        `;
+
+			const fileInfo: FileInfo = {
+				path: 'index.js',
+				source: INPUT,
+			};
+
+			const actualOutput = transform(fileInfo, buildApi('tsx'));
+
+			assert.deepEqual(
+				actualOutput?.replace(/\W/gm, ''),
+				OUTPUT.replace(/\W/gm, ''),
+			);
+		});
+
+		it.only('example 3', function () {
+			const INPUT = `
+			function mapStateToProps(state: State, ownProps) {
+				const { site, plan } = ownProps.location.query;
+
+				return {
+					siteId: site,
+					highlightPlan: plan,
+				};
+			}
+			`;
+
+			const OUTPUT = `
+			import { parse } from 'query-string';
+			
+			function mapStateToProps(state: State, ownProps) {
+				const { site, plan } = parse(ownProps.location.search);
+
+				return {
+					siteId: site,
+					highlightPlan: plan,
+				};
+			}
+			`;
+
+			const fileInfo: FileInfo = {
+				path: 'index.js',
+				source: INPUT,
+			};
+
+			const actualOutput = transform(fileInfo, buildApi('tsx'));
+
+			assert.deepEqual(actualOutput, OUTPUT);
+		});
+	});
 });

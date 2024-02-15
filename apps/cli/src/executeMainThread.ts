@@ -12,6 +12,14 @@ import {
 	buildOptions,
 	buildUseCacheOption,
 	buildUseJsonOption,
+	CommandArgsWithOptions,
+	LearnCommandArgs,
+	ListCommandArgs,
+	LoginCommandArgs,
+	LogoutCommandArgs,
+	PreCommitCommandArgs,
+	PublishCommandArgs,
+	SyncCommandArgs,
 } from './buildOptions.js';
 import { APP_INSIGHTS_INSTRUMENTATION_STRING } from './constants.js';
 import { CodemodDownloader } from './downloadCodemod.js';
@@ -32,6 +40,42 @@ import {
 	AppInsightsTelemetryService,
 	NoTelemetryService,
 } from './telemetryService.js';
+
+const fetchBuffer = async (url: string) => {
+	const { data } = await Axios.get(url, {
+		responseType: 'arraybuffer',
+	});
+
+	return Buffer.from(data);
+};
+
+async function syncRegistryOperation(
+	disableCache: boolean,
+	printer: Printer,
+	fileDownloadService: FileDownloadService,
+	tarService: TarService,
+) {
+	const codemodDownloader = new CodemodDownloader(
+		printer,
+		join(homedir(), '.codemod'),
+		disableCache,
+		fileDownloadService,
+		tarService,
+	);
+
+	try {
+		await codemodDownloader.syncRegistry();
+	} catch (error) {
+		if (!(error instanceof Error)) {
+			return;
+		}
+
+		printer.printOperationMessage({
+			kind: 'error',
+			message: error.message,
+		});
+	}
+}
 
 // the build script contains the version
 declare const __CODEMODCOM_CLI_VERSION__: string;
@@ -68,42 +112,75 @@ export const executeMainThread = async () => {
 
 	process.stdin.unref();
 
+	// const yargsInstance = yargs(slicedArgv).scriptName('codemod');
+
+	// const argvWithOptions = buildOptions(yargsInstance);
+
 	const argvObject = yargs(slicedArgv)
 		.scriptName('codemod')
-		.command('*', 'runs a codemod or recipe', (y) => buildOptions(y))
-		.command(
+		.command<CommandArgsWithOptions>(
+			'*',
+			'runs a codemod or recipe',
+			(y) => buildOptions(y),
+			async (args) => {
+				const printer = new Printer(args.json);
+
+				const argsWithInput = {
+					...args,
+					'arg:input': userInput,
+				};
+			},
+		)
+		.command<PreCommitCommandArgs>(
 			'runOnPreCommit [files...]',
 			'run pre-commit codemods against staged files passed positionally',
 			(y) => buildUseJsonOption(buildUseCacheOption(y)),
+			(args) => {},
 		)
-		.command(
+		.command<ListCommandArgs>(
 			'list',
 			'lists all the codemods & recipes in the public registry',
 			(y) => buildUseJsonOption(buildUseCacheOption(y)),
+			async (args) => {
+				try {
+					await handleListNamesAfterSyncing(
+						args['no-cache'],
+						printer,
+						fileDownloadService,
+						tarService,
+						true,
+					);
+				} catch (error) {
+					if (!(error instanceof Error)) {
+						return;
+					}
+
+					printer.printOperationMessage({
+						kind: 'error',
+						message: error.message,
+					});
+				}
+
+				exit();
+
+				return;
+			},
 		)
-		.command(
-			'syncRegistry',
+		.command<SyncCommandArgs>(
+			'sync',
 			'syncs all the codemods from the registry',
 			(y) => buildUseJsonOption(y),
 		)
-		.command('sync [name]', 'synchronize a codemod', (y) =>
-			buildUseJsonOption(
-				y.positional('name', {
-					type: 'string',
-					description: 'The name of the codemod',
-				}),
-			),
-		)
-		.command(
+		.command<LearnCommandArgs>(
 			'learn',
 			'exports the current `git diff` in a file to before/after panels in the Codemod Studio',
 			(y) =>
-				buildUseJsonOption(y).option('targetPath', {
+				buildUseJsonOption(y).option('target', {
 					type: 'string',
 					description: 'Input file path',
 				}),
 		)
-		.command(
+		.command<LoginCommandArgs>(
 			'login',
 			'logs in through authentication in the Codemod Studio',
 			(y) =>
@@ -112,9 +189,36 @@ export const executeMainThread = async () => {
 					description: 'token required to sign in to the Codemod CLI',
 				}),
 		)
-		.command('logout', 'logs out', (y) => buildUseJsonOption(y))
-		.command('publish', 'publish the codemod to Codemod Registry', (y) =>
+		.command<LogoutCommandArgs>('logout', 'logs out', (y) =>
 			buildUseJsonOption(y),
+		)
+		.command<PublishCommandArgs>(
+			'publish',
+			'publish the codemod to Codemod Registry',
+			(y) => buildUseJsonOption(y),
+			async (args) => {
+				const printer = new Printer(args.json);
+
+				try {
+					await handlePublishCliCommand(
+						printer,
+						args.sourcePath ?? args.source ?? process.cwd(),
+					);
+				} catch (error) {
+					if (!(error instanceof Error)) {
+						return;
+					}
+
+					printer.printOperationMessage({
+						kind: 'error',
+						message: error.message,
+					});
+				}
+
+				exit();
+
+				return;
+			},
 		)
 		.help()
 		.version(__CODEMODCOM_CLI_VERSION__);
@@ -123,21 +227,6 @@ export const executeMainThread = async () => {
 		argvObject.showHelp();
 		return;
 	}
-
-	const argv = {
-		...(await Promise.resolve(argvObject.argv)),
-		'arg:input': userInput,
-	};
-
-	const fetchBuffer = async (url: string) => {
-		const { data } = await Axios.get(url, {
-			responseType: 'arraybuffer',
-		});
-
-		return Buffer.from(data);
-	};
-
-	const printer = new Printer(argv.useJson);
 
 	const fileDownloadService = new FileDownloadService(
 		argv.useCache,
@@ -174,28 +263,6 @@ export const executeMainThread = async () => {
 	}
 
 	if (String(argv._) === 'list') {
-		try {
-			await handleListNamesAfterSyncing(
-				argv.useCache,
-				printer,
-				fileDownloadService,
-				tarService,
-				true,
-			);
-		} catch (error) {
-			if (!(error instanceof Error)) {
-				return;
-			}
-
-			printer.printOperationMessage({
-				kind: 'error',
-				message: error.message,
-			});
-		}
-
-		exit();
-
-		return;
 	}
 
 	if (String(argv._) === 'syncRegistry') {
@@ -303,27 +370,6 @@ export const executeMainThread = async () => {
 	}
 
 	if (String(argv._) === 'publish') {
-		const printer = new Printer(argv.useJson);
-
-		try {
-			await handlePublishCliCommand(
-				printer,
-				argv.sourcePath ?? argv.source ?? process.cwd(),
-			);
-		} catch (error) {
-			if (!(error instanceof Error)) {
-				return;
-			}
-
-			printer.printOperationMessage({
-				kind: 'error',
-				message: error.message,
-			});
-		}
-
-		exit();
-
-		return;
 	}
 
 	const configurationDirectoryPath = join(
@@ -373,31 +419,3 @@ export const executeMainThread = async () => {
 
 	exit();
 };
-
-export async function syncRegistryOperation(
-	useCache: boolean,
-	printer: Printer,
-	fileDownloadService: FileDownloadService,
-	tarService: TarService,
-) {
-	const codemodDownloader = new CodemodDownloader(
-		printer,
-		join(homedir(), '.codemod'),
-		useCache,
-		fileDownloadService,
-		tarService,
-	);
-
-	try {
-		await codemodDownloader.syncRegistry();
-	} catch (error) {
-		if (!(error instanceof Error)) {
-			return;
-		}
-
-		printer.printOperationMessage({
-			kind: 'error',
-			message: error.message,
-		});
-	}
-}

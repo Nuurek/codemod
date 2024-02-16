@@ -1,0 +1,1 @@
+{"linter":{"ignore":["*.d.ts","*.js","**/dist/**","**/build/**","pnpm-lock.yaml","**/node_modules/**",".eslint*"]},"formatter":{"ignore":["*.d.ts","input.js","output.js","**/dist/**","**/build/**","pnpm-lock.yaml","node_modules","build-ncc"]}}

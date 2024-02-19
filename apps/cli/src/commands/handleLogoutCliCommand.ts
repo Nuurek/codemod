@@ -1,8 +1,8 @@
 import { readFile, unlink } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { revokeCLIToken } from './apis.js';
-import type { PrinterBlueprint } from './printer.js';
+import { revokeCLIToken } from '../apis.js';
+import type { PrinterBlueprint } from '../printer.js';
 
 export const handleLogoutCliCommand = async (printer: PrinterBlueprint) => {
 	const tokenTxtPath = join(homedir(), '.codemod', 'token.txt');

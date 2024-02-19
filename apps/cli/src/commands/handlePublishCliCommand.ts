@@ -5,9 +5,9 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import FormData from 'form-data';
 import { object, optional, parse, string } from 'valibot';
-import { publish, validateAccessToken } from './apis.js';
-import type { PrinterBlueprint } from './printer.js';
-import { boldText, colorizeText } from './utils.js';
+import { publish, validateAccessToken } from '../apis.js';
+import type { PrinterBlueprint } from '../printer.js';
+import { boldText, colorizeText } from '../utils.js';
 
 const packageJsonSchema = object({
 	main: string(),

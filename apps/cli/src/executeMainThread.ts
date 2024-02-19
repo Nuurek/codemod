@@ -21,14 +21,14 @@ import {
 	PublishCommandArgs,
 	SyncCommandArgs,
 } from './buildOptions.js';
+import { handleLearnCliCommand } from './commands/handleLearnCliCommand.js';
+import { handleListNamesAfterSyncing } from './commands/handleListCliCommand.js';
+import { handleLoginCliCommand } from './commands/handleLoginCliCommand.js';
+import { handleLogoutCliCommand } from './commands/handleLogoutCliCommand.js';
+import { handlePublishCliCommand } from './commands/handlePublishCliCommand.js';
 import { APP_INSIGHTS_INSTRUMENTATION_STRING } from './constants.js';
 import { CodemodDownloader } from './downloadCodemod.js';
 import { FileDownloadService } from './fileDownloadService.js';
-import { handleLearnCliCommand } from './handleLearnCliCommand.js';
-import { handleListNamesAfterSyncing } from './handleListCliCommand.js';
-import { handleLoginCliCommand } from './handleLoginCliCommand.js';
-import { handleLogoutCliCommand } from './handleLogoutCliCommand.js';
-import { handlePublishCliCommand } from './handlePublishCliCommand.js';
 import { Printer } from './printer.js';
 import { loadRepositoryConfiguration } from './repositoryConfiguration.js';
 import { Runner } from './runner.js';

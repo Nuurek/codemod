@@ -1,9 +1,9 @@
 import { writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { validateAccessToken } from './apis.js';
-import type { PrinterBlueprint } from './printer.js';
-import { boldText, colorizeText, openURL } from './utils.js';
+import { validateAccessToken } from '../apis.js';
+import type { PrinterBlueprint } from '../printer.js';
+import { boldText, colorizeText, openURL } from '../utils.js';
 
 const ACCESS_TOKEN_REQUESTED_BY_CLI_KEY = 'accessTokenRequestedByCLI';
 

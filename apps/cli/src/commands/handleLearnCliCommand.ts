@@ -7,9 +7,9 @@ import {
 	getGitDiffForFile,
 	getLatestCommitHash,
 	isFileInGitDirectory,
-} from './gitCommands.js';
-import { PrinterBlueprint } from './printer.js';
-import { boldText, colorizeText, doubleQuotify, openURL } from './utils.js';
+} from '../gitCommands.js';
+import { PrinterBlueprint } from '../printer.js';
+import { boldText, colorizeText, doubleQuotify, openURL } from '../utils.js';
 
 // remove all special characters and whitespaces
 const removeSpecialCharacters = (str: string) =>

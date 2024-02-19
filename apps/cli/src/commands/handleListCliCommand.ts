@@ -5,10 +5,10 @@ import { join } from 'node:path';
 import { isNeitherNullNorUndefined } from '@codemod-com/utilities';
 import { glob } from 'fast-glob';
 import * as v from 'valibot';
-import { syncRegistryOperation } from './executeMainThread.js';
-import { FileDownloadService } from './fileDownloadService.js';
-import type { Printer } from './printer.js';
-import { TarService } from './services/tarService.js';
+import { syncRegistryOperation } from '../executeMainThread.js';
+import { FileDownloadService } from '../fileDownloadService.js';
+import type { Printer } from '../printer.js';
+import { TarService } from '../services/tarService.js';
 
 export const handleListNamesCommand = async (printer: Printer) => {
 	const configurationDirectoryPath = join(homedir(), '.codemod');

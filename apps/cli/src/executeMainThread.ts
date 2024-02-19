@@ -49,7 +49,7 @@ const fetchBuffer = async (url: string) => {
 	return Buffer.from(data);
 };
 
-async function syncRegistryOperation(
+export async function syncRegistryOperation(
 	disableCache: boolean,
 	printer: Printer,
 	fileDownloadService: FileDownloadService,

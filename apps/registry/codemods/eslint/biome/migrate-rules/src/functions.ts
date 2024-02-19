@@ -100,23 +100,20 @@ export function eslintToBiomeRuleValue(value: string): RuleValue {
 export function getPackageManager(
 	packageJson: Input<typeof packageJsonSchema>,
 ) {
-	const isYarn = (
-		packageJson.packageManager ?? JSON.stringify(packageJson.scripts)
-	).match(/yarn/g);
+	const traversedString =
+		packageJson.packageManager ?? JSON.stringify(packageJson.scripts);
+
+	const isYarn = traversedString ? traversedString.match(/yarn/g) : false;
 	if (isYarn) {
 		return ['yarn', 'yarn dlx'] as const;
 	}
 
-	const isPnpm = (
-		packageJson.packageManager ?? JSON.stringify(packageJson.scripts)
-	).match(/pnpm/g);
+	const isPnpm = traversedString ? traversedString.match(/pnpm/g) : false;
 	if (isPnpm) {
 		return ['pnpm', 'pnpm dlx'] as const;
 	}
 
-	const isBun = (
-		packageJson.packageManager ?? JSON.stringify(packageJson.scripts)
-	).match(/bun/g);
+	const isBun = traversedString ? traversedString.match(/bun/g) : false;
 	if (isBun) {
 		return ['bun', 'bunx'] as const;
 	}

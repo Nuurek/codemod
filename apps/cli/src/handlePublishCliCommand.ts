@@ -2,18 +2,13 @@ import { createHash } from "crypto";
 import * as fs from "fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { codemodConfigSchema } from "@codemod-com/utilities";
 import FormData from "form-data";
 import { mkdir, writeFile } from "fs/promises";
-import { object, optional, parse, string } from "valibot";
+import { parse } from "valibot";
 import { publish, validateAccessToken } from "./apis.js";
 import type { PrinterBlueprint } from "./printer.js";
-import { codemodConfigSchema } from "@codemod-com/utilities";
 import { boldText, colorizeText } from "./utils.js";
-
-const packageJsonSchema = object({
-	main: string(),
-	license: optional(string()),
-});
 
 const getToken = async (): Promise<string> => {
 	const configurationDirectoryPath = join(homedir(), ".codemod");
@@ -59,31 +54,6 @@ export const handlePublishCliCommand = async (
 		);
 	}
 
-	const pkg = parse(packageJsonSchema, JSON.parse(packageJsonData));
-
-	if (!pkg.main) {
-		throw new Error(
-			`Please provide a "main" field in your package.json which links to the bundled .cjs file to publish your codemod.`,
-		);
-	}
-
-	if (pkg.license !== "MIT" && pkg.license !== "Apache-2.0") {
-		throw new Error(
-			`Please provide a "MIT" or "Apache-2.0" license in your package.json's "license" field to publish your codemod.`,
-		);
-	}
-
-	let indexCjsData: string;
-	try {
-		indexCjsData = await fs.promises.readFile(join(source, pkg.main), {
-			encoding: "utf-8",
-		});
-	} catch (err) {
-		throw new Error(
-			`Could not find the main file of the codemod in ${pkg.main}. Did you forget to run "codemod build"?`,
-		);
-	}
-
 	let codemodRcData: string;
 	try {
 		codemodRcData = await fs.promises.readFile(
@@ -103,6 +73,21 @@ export const handlePublishCliCommand = async (
 	if (!("name" in codemodRc) || !/[a-zA-Z0-9_/@-]+/.test(codemodRc.name)) {
 		throw new Error(
 			`The "name" field in .codemodrc.json must only contain allowed characters (a-z, A-Z, 0-9, _, /, @ or -)`,
+		);
+	}
+
+	const indexCjsPath = join(
+		source,
+		codemodRc.build?.output ?? "./dist/index.cjs",
+	);
+	let indexCjsData: string;
+	try {
+		indexCjsData = await fs.promises.readFile(indexCjsPath, {
+			encoding: "utf-8",
+		});
+	} catch (err) {
+		throw new Error(
+			`Could not find the main file of the codemod in ${indexCjsPath}. Did you forget to run "codemod build"?`,
 		);
 	}
 
